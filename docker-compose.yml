@@ -1,0 +1,38 @@
+version: '2'
+services:
+  nginx:
+    build: ./nginx
+    volumes_from:
+      - code
+    links:
+      - fpm
+    ports:
+      - 80:80
+  code:
+    build: ./code
+    volumes:
+      - ./code:/var/www/html
+      - ./composer/vendor:/var/www/html/vendor
+  fpm:
+    build: ./php
+    volumes_from:
+      - code
+    links:
+      - redis
+  worker:
+    build: ./php
+    command: php run_worker.php
+    volumes_from:
+      - code
+    links:
+      - redis
+  redis:
+    image: redis
+  resque:
+    image: ennexa/resque-web
+    restart: always
+    links:
+    - redis:redisserver
+    ports:
+      - "5678:5678"
+    command: "-r redis://redisserver:6379"
